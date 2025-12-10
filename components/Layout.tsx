@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavTab } from '../types';
-import { Home, Search, Sparkles, Bookmark, User } from 'lucide-react';
+import { Home, Search, Bookmark, User, LayoutGrid } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -15,7 +15,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const path = location.pathname;
     if (path === '/') return NavTab.HOME;
     if (path === '/search') return NavTab.SEARCH;
-    if (path === '/ai') return NavTab.AI_GENIUS;
+    if (path === '/categories') return NavTab.AI_GENIUS; // Using generic mapping for now
     if (path === '/saved') return NavTab.SAVED;
     if (path === '/profile') return NavTab.PROFILE;
     return NavTab.HOME;
@@ -23,7 +23,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const activeTab = getActiveTab();
 
-  const handleNav = (tab: NavTab, path: string) => {
+  const handleNav = (path: string) => {
     navigate(path);
   };
 
@@ -36,38 +36,36 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Bottom Navigation Bar - Mobile App Style */}
       <div className="fixed bottom-0 left-0 right-0 bg-dark-surface/95 backdrop-blur-lg border-t border-separator pb-safe z-50 md:hidden transition-colors">
-        <div className="flex justify-around items-center h-16">
+        <div className="flex justify-between items-center h-16 px-2">
           <NavItem 
             icon={<Home size={24} />} 
             label="خانه" 
-            isActive={activeTab === NavTab.HOME} 
-            onClick={() => handleNav(NavTab.HOME, '/')} 
+            isActive={location.pathname === '/'} 
+            onClick={() => handleNav('/')} 
           />
           <NavItem 
             icon={<Search size={24} />} 
             label="جستجو" 
-            isActive={activeTab === NavTab.SEARCH} 
-            onClick={() => handleNav(NavTab.SEARCH, '/search')} 
+            isActive={location.pathname === '/search'} 
+            onClick={() => handleNav('/search')} 
           />
-          <div className="relative -top-5">
-             <button 
-                onClick={() => handleNav(NavTab.AI_GENIUS, '/ai')}
-                className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-primary/40 transition-transform active:scale-95 ${activeTab === NavTab.AI_GENIUS ? 'bg-content-primary text-primary' : 'bg-primary text-white'}`}
-             >
-                <Sparkles size={28} fill={activeTab === NavTab.AI_GENIUS ? "currentColor" : "none"} />
-             </button>
-          </div>
+          <NavItem 
+            icon={<LayoutGrid size={24} />} 
+            label="دسته بندی" 
+            isActive={location.pathname === '/categories'} 
+            onClick={() => handleNav('/categories')} 
+          />
           <NavItem 
             icon={<Bookmark size={24} />} 
-            label="ذخیره" 
-            isActive={activeTab === NavTab.SAVED} 
-            onClick={() => handleNav(NavTab.SAVED, '/saved')} 
+            label="لیست من" 
+            isActive={location.pathname === '/saved'} 
+            onClick={() => handleNav('/saved')} 
           />
           <NavItem 
             icon={<User size={24} />} 
             label="پروفایل" 
-            isActive={activeTab === NavTab.PROFILE} 
-            onClick={() => handleNav(NavTab.PROFILE, '/profile')} 
+            isActive={location.pathname === '/profile'} 
+            onClick={() => handleNav('/profile')} 
           />
         </div>
       </div>
@@ -76,11 +74,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="hidden md:flex fixed top-0 right-0 h-full w-64 bg-dark-surface border-l border-separator flex-col p-6 z-40 transition-colors">
         <h1 className="text-2xl font-bold text-primary mb-10">KiaMovie</h1>
         <div className="space-y-4">
-             <SidebarItem icon={<Home />} label="خانه" active={activeTab === NavTab.HOME} onClick={() => handleNav(NavTab.HOME, '/')} />
-             <SidebarItem icon={<Search />} label="جستجو" active={activeTab === NavTab.SEARCH} onClick={() => handleNav(NavTab.SEARCH, '/search')} />
-             <SidebarItem icon={<Sparkles />} label="هوش مصنوعی" active={activeTab === NavTab.AI_GENIUS} onClick={() => handleNav(NavTab.AI_GENIUS, '/ai')} />
-             <SidebarItem icon={<Bookmark />} label="لیست تماشا" active={activeTab === NavTab.SAVED} onClick={() => handleNav(NavTab.SAVED, '/saved')} />
-             <SidebarItem icon={<User />} label="پروفایل کاربری" active={activeTab === NavTab.PROFILE} onClick={() => handleNav(NavTab.PROFILE, '/profile')} />
+             <SidebarItem icon={<Home />} label="خانه" active={location.pathname === '/'} onClick={() => handleNav('/')} />
+             <SidebarItem icon={<Search />} label="جستجو" active={location.pathname === '/search'} onClick={() => handleNav('/search')} />
+             <SidebarItem icon={<LayoutGrid />} label="دسته بندی ها" active={location.pathname === '/categories'} onClick={() => handleNav('/categories')} />
+             <SidebarItem icon={<Bookmark />} label="لیست تماشا" active={location.pathname === '/saved'} onClick={() => handleNav('/saved')} />
+             <SidebarItem icon={<User />} label="پروفایل کاربری" active={location.pathname === '/profile'} onClick={() => handleNav('/profile')} />
         </div>
       </div>
     </div>
@@ -90,14 +88,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 const NavItem = ({ icon, label, isActive, onClick }: { icon: React.ReactElement, label: string, isActive: boolean, onClick: () => void }) => (
   <button 
     onClick={onClick}
-    className={`flex flex-col items-center justify-center space-y-1 w-16 transition-colors ${isActive ? 'text-primary' : 'text-content-secondary hover:text-content-primary'}`}
+    className={`flex flex-col items-center justify-center space-y-1 flex-1 py-1 transition-colors ${isActive ? 'text-white' : 'text-gray-500'}`}
   >
     {React.cloneElement(icon as React.ReactElement<any>, { 
       strokeWidth: isActive ? 2.5 : 2,
-      fill: isActive ? "currentColor" : "none",
-      className: isActive ? "opacity-100" : "opacity-80"
+      className: isActive ? "scale-105 transition-transform" : ""
     })}
-    <span className="text-[10px] font-medium">{label}</span>
+    <span className={`text-[10px] font-medium ${isActive ? 'text-white' : 'text-gray-500'}`}>{label}</span>
   </button>
 );
 

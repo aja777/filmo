@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, Subtitles, Loader2, ArrowLeft } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, Subtitles, Loader2, ArrowLeft, Check } from 'lucide-react';
 import { StreamLink } from '../types';
 
 interface VideoPlayerProps {
@@ -18,6 +18,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => 
   const [isMuted, setIsMuted] = useState(false);
   const [currentQuality, setCurrentQuality] = useState<StreamLink | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSubtitles, setShowSubtitles] = useState(false);
+  const [currentSubtitle, setCurrentSubtitle] = useState<string>('off');
   const [isBuffering, setIsBuffering] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -29,6 +31,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => 
     { quality: '1080p', url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
     { quality: '720p', url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
     { quality: '480p', url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' }
+  ];
+
+  // Mock Subtitles
+  const mockSubtitles = [
+      { label: 'خاموش', value: 'off' },
+      { label: 'فارسی', value: 'fa' },
+      { label: 'English', value: 'en' },
   ];
 
   const streams = streamLinks && streamLinks.length > 0 ? streamLinks : defaultStreams;
@@ -54,7 +63,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => 
       setShowControls(true);
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
       if (isPlaying) {
-        controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
+        controlsTimeoutRef.current = setTimeout(() => {
+            if (!showSettings && !showSubtitles) {
+                setShowControls(false);
+            }
+        }, 3000);
       }
     };
 
@@ -73,7 +86,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => 
       }
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
-  }, [isPlaying]);
+  }, [isPlaying, showSettings, showSubtitles]);
 
   const togglePlay = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -147,6 +160,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => 
             }
         }, 100);
     }
+  };
+
+  const changeSubtitle = (value: string) => {
+      setCurrentSubtitle(value);
+      setShowSubtitles(false);
+      // In a real implementation, this would switch the <track> src
+      console.log("Subtitle switched to:", value);
   };
 
   const formatTime = (seconds: number) => {
@@ -230,10 +250,42 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => 
           </div>
 
           <div className="flex items-center space-x-4 space-x-reverse relative">
-            {/* Settings */}
+            
+            {/* Subtitle Toggle */}
             <div className="relative">
                 <button 
-                    onClick={() => setShowSettings(!showSettings)} 
+                    onClick={() => { setShowSubtitles(!showSubtitles); setShowSettings(false); }} 
+                    className={`text-white hover:text-primary transition-colors focus:outline-none ${showSubtitles ? 'text-primary' : ''}`}
+                >
+                    <Subtitles size={20} />
+                </button>
+
+                {showSubtitles && (
+                    <div className="absolute bottom-10 left-0 bg-dark-surface/95 backdrop-blur-xl border border-separator rounded-xl p-2 shadow-2xl w-36 animate-slideUp origin-bottom-left z-50">
+                        <div className="flex items-center justify-between px-2 mb-2 pb-2 border-b border-separator">
+                            <span className="text-[10px] font-bold text-content-secondary">زیرنویس</span>
+                            <Subtitles size={12} className="text-content-secondary" />
+                        </div>
+                        <div className="space-y-1">
+                            {mockSubtitles.map((sub, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => changeSubtitle(sub.value)}
+                                    className={`w-full text-right text-xs px-3 py-2 rounded-lg transition-all flex items-center justify-between ${currentSubtitle === sub.value ? 'bg-primary text-white font-bold shadow-lg shadow-primary/20' : 'text-content-primary hover:bg-white/5'}`}
+                                >
+                                    <span>{sub.label}</span>
+                                    {currentSubtitle === sub.value && <Check size={12} />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Quality Settings */}
+            <div className="relative">
+                <button 
+                    onClick={() => { setShowSettings(!showSettings); setShowSubtitles(false); }} 
                     className="text-white hover:text-primary transition-colors flex items-center space-x-1 space-x-reverse focus:outline-none"
                 >
                     <Settings size={20} className={showSettings ? "animate-spin-slow text-primary" : ""} />
@@ -260,11 +312,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => 
                     </div>
                 )}
             </div>
-            
-             {/* Subtitle Toggle (Mock) */}
-            <button className="text-white hover:text-white/80 transition-colors focus:outline-none hidden sm:block">
-                <Subtitles size={20} />
-            </button>
 
             {/* Fullscreen */}
             <button onClick={toggleFullscreen} className="text-white hover:text-primary transition-colors focus:outline-none">

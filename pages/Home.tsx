@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import HeroSlider from '../components/HeroSlider';
 import MovieCard from '../components/MovieCard';
-import AdBanner from '../components/AdBanner';
 import { api } from '../services/api';
 import { Movie, Category } from '../types';
 import { ChevronLeft, Bell, Search, Clapperboard, Loader2 } from 'lucide-react';
@@ -20,7 +19,7 @@ const Home: React.FC = () => {
       setLoading(true);
       try {
         const [moviesData, catsData] = await Promise.all([
-          api.getMovies(1, 10),
+          api.getMovies(1, 40),
           api.getCategories()
         ]);
         setMovies(moviesData.items);
@@ -35,17 +34,16 @@ const Home: React.FC = () => {
     fetchData();
   }, []);
 
-  // Filter based on fetched data
-  // Note: Since API returns mixed content, we simulate filtering here for the UI
-  // In a real app, you would call api.getMovies({ category: 'series' })
-  const latestMovies = movies.filter(m => !m.type || m.type === 'movie');
-  // For demo, if we don't have enough data, we reuse movies
+  // Sections Data Logic
   const heroSlides = movies.slice(0, 5);
   
-  // Fake "Series" and "Animation" if API doesn't return them specifically yet
-  // Or filter if the API returns categories
-  const series = movies.filter(m => m.genres.includes('سریال') || m.type === 'series');
-  const animations = movies.filter(m => m.genres.includes('انیمیشن') || m.type === 'animation');
+  // Latest Arrivals (Since API returns sorted by date DESC, the first 10 items are the newest)
+  const newArrivals = movies.slice(0, 10);
+
+  const latestMovies = movies.filter(m => (!m.type || m.type === 'movie') && !m.isFree).slice(0, 10);
+  const series = movies.filter(m => m.type === 'series' || m.genres.includes('سریال')).slice(0, 10);
+  const animations = movies.filter(m => m.type === 'animation' || m.genres.includes('انیمیشن')).slice(0, 10);
+  const freeMovies = movies.filter(m => m.isFree).slice(0, 10);
 
   if (loading) {
       return (
@@ -59,92 +57,59 @@ const Home: React.FC = () => {
 
   return (
     <Layout>
-      <div className="w-full pb-24 md:pl-64">
+      <div className="w-full pb-24 md:pl-64 relative">
         
-        {/* Custom Header (Mobile) */}
-        <div className="absolute top-0 left-0 right-0 z-30 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent md:hidden">
-            <div className="text-white font-bold text-xl tracking-wide drop-shadow-md">
-                کیامووی
-            </div>
+        {/* Custom Header (Absolute Overlay) */}
+        <div className="absolute top-0 left-0 right-0 z-30 px-4 py-4 flex justify-between items-center bg-gradient-to-b from-black/90 to-transparent">
+             {/* Left Icons */}
             <div className="flex items-center space-x-4 space-x-reverse">
-                <button onClick={() => navigate('/search')} className="text-white hover:text-primary transition-colors drop-shadow-md">
-                    <Search size={24} />
+                <button className="text-white hover:text-primary transition-colors relative">
+                    <Bell size={26} />
+                    <span className="absolute top-0 right-0.5 w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-black"></span>
                 </button>
-                <button className="text-white hover:text-primary transition-colors drop-shadow-md relative">
-                    <Bell size={24} />
-                    <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-black"></span>
+                <button onClick={() => navigate('/search')} className="text-white hover:text-primary transition-colors">
+                    <Search size={26} />
                 </button>
+            </div>
+             {/* Right Logo */}
+            <div className="text-white font-extrabold text-xl tracking-tight drop-shadow-lg">
+                کیامووی
             </div>
         </div>
 
         <HeroSlider movies={heroSlides} />
         
-        {/* Weekly Schedule Banner */}
+        {/* Weekly Schedule Banner - Dark Blue Box */}
         <div className="px-4 mt-6">
-            <div className="bg-dark-surface border border-separator rounded-xl p-4 flex flex-col items-center justify-center space-y-2 cursor-pointer hover:bg-content-primary/5 transition-colors shadow-lg group">
-                <Clapperboard size={32} className="text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-content-primary font-bold text-sm">برنامه پخش هفتگی سریال ها</span>
+            <div className="bg-[#1e2336] rounded-xl py-4 flex flex-col items-center justify-center space-y-2 cursor-pointer shadow-lg active:scale-98 transition-transform">
+                <Clapperboard size={36} className="text-[#4355ff] fill-[#4355ff]/20" />
+                <span className="text-gray-200 font-medium text-xs">برنامه پخش هفتگی سریال ها</span>
             </div>
         </div>
 
-        {/* Categories Pills */}
-        <div className="mt-6 px-4">
-             <div className="flex justify-between items-center mb-3">
-                 <h2 className="text-sm font-bold text-content-secondary">دسته‌بندی‌ها</h2>
-                 <button onClick={() => navigate('/search')} className="text-xs text-primary">مشاهده همه</button>
-             </div>
-             <div className="grid grid-cols-3 gap-2">
-                {categories.slice(0, 6).map(cat => (
-                     <button key={cat.id} className="bg-dark-surface border border-separator text-content-secondary py-2.5 rounded-lg text-xs font-bold hover:bg-primary hover:text-white hover:border-primary transition-colors">
-                        {cat.name}
-                    </button>
-                ))}
-                {categories.length === 0 && (
-                    <>
-                        <button className="bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 py-2.5 rounded-lg text-xs font-bold hover:bg-indigo-600 hover:text-white transition-colors">فیلم</button>
-                        <button className="bg-purple-600/20 border border-purple-500/30 text-purple-400 py-2.5 rounded-lg text-xs font-bold hover:bg-purple-600 hover:text-white transition-colors">سریال</button>
-                        <button className="bg-pink-600/20 border border-pink-500/30 text-pink-400 py-2.5 rounded-lg text-xs font-bold hover:bg-pink-600 hover:text-white transition-colors">انیمیشن</button>
-                    </>
-                )}
-             </div>
-        </div>
-
-        {/* Ad Banner */}
-        <div className="px-4">
-           <AdBanner />
-        </div>
-
-        {/* Featured Landscape Section */}
-        <div className="mt-2 px-4">
-            <div className="flex justify-between items-center mb-4">
-                 <h2 className="text-lg font-bold text-content-primary border-r-4 border-primary pr-3">پیشنهاد ویژه کیامووی</h2>
-            </div>
-            <div className="flex overflow-x-auto no-scrollbar pb-4 -mr-4 pr-4 pl-4">
-                 {movies.map(movie => (
-                    <MovieCard key={`land-${movie.id}`} movie={movie} variant="landscape" />
-                ))}
-            </div>
-         </div>
-
-        {/* Latest Movies Section */}
-        <Section title="تازه ترین فیلم ها" link="/movies">
-            {latestMovies.map(movie => (
-                <div className="mr-4" key={movie.id}>
+        {/* New Arrivals Section (Added) */}
+        <Section title="تازه ها" link="/new">
+            {newArrivals.map(movie => (
+                <div className="mr-3 ml-1" key={`new-${movie.id}`}>
                     <MovieCard movie={movie} />
                 </div>
             ))}
         </Section>
 
-        {/* Ad Banner */}
-        <div className="px-4 mt-4">
-           <AdBanner format="rectangle" className="hidden md:flex" />
-        </div>
+        {/* Latest Movies Section */}
+        <Section title="فیلم" link="/movies">
+            {latestMovies.map(movie => (
+                <div className="mr-3 ml-1" key={movie.id}>
+                    <MovieCard movie={movie} />
+                </div>
+            ))}
+        </Section>
 
         {/* Series Section */}
         {series.length > 0 && (
-            <Section title="سریال های بروز" link="/series">
+            <Section title="سریال" link="/series">
                 {series.map(movie => (
-                    <div className="mr-4" key={`series-${movie.id}`}>
+                    <div className="mr-3 ml-1" key={`series-${movie.id}`}>
                         <MovieCard movie={movie} />
                     </div>
                 ))}
@@ -155,13 +120,58 @@ const Home: React.FC = () => {
         {animations.length > 0 && (
             <Section title="انیمیشن" link="/animation">
                 {animations.map(movie => (
-                    <div className="mr-4" key={`anim-${movie.id}`}>
+                    <div className="mr-3 ml-1" key={`anim-${movie.id}`}>
                         <MovieCard movie={movie} />
                     </div>
                 ))}
             </Section>
         )}
 
+        {/* Free Section */}
+        {freeMovies.length > 0 && (
+             <Section title="رایگان" link="/free">
+                {freeMovies.map(movie => (
+                    <div className="mr-3 ml-1" key={`free-${movie.id}`}>
+                        <MovieCard movie={movie} />
+                    </div>
+                ))}
+            </Section>
+        )}
+
+        {/* Dynamic Category Sections */}
+        {categories.map(cat => {
+            const catMovies = movies.filter(m => m.genres.includes(cat.name));
+            if (catMovies.length === 0) return null;
+            
+            return (
+                <Section key={cat.id} title={cat.name} link={`/search?genre=${cat.name}`}>
+                    {catMovies.map(movie => (
+                        <div className="mr-3 ml-1" key={`cat-${cat.id}-${movie.id}`}>
+                            <MovieCard movie={movie} />
+                        </div>
+                    ))}
+                </Section>
+            );
+        })}
+
+        {/* Categories List (Vertical Buttons at bottom) */}
+        <div className="mt-8 px-4 border-t border-white/5 pt-6">
+             <div className="flex justify-between items-center mb-4">
+                 <h2 className="text-sm font-bold text-gray-300">دسته‌بندی‌ها</h2>
+             </div>
+             <div className="flex flex-col space-y-2">
+                {categories.slice(0, 8).map(cat => (
+                     <button 
+                        key={cat.id} 
+                        onClick={() => navigate('/search')}
+                        className="w-full bg-[#181a20] text-gray-400 py-3.5 px-4 rounded-xl text-xs font-medium hover:bg-[#22252b] hover:text-white transition-all flex justify-between items-center"
+                     >
+                        <span>{cat.name}</span>
+                        <ChevronLeft size={16} className="opacity-50" />
+                    </button>
+                ))}
+             </div>
+        </div>
       </div>
     </Layout>
   );
@@ -170,15 +180,15 @@ const Home: React.FC = () => {
 const Section = ({ title, link, children }: { title: string, link: string, children?: React.ReactNode }) => {
     if (React.Children.count(children) === 0) return null;
     return (
-        <div className="mt-6 border-t border-white/5 pt-6">
-            <div className="flex justify-between items-center px-4 mb-4">
-                <h2 className="text-lg font-bold text-content-primary border-r-4 border-primary pr-3">{title}</h2>
-                <button className="text-xs text-primary flex items-center hover:underline">
+        <div className="mt-8 border-t border-white/5 pt-4">
+            <div className="flex justify-between items-center px-4 mb-3">
+                <h2 className="text-base font-bold text-gray-100">{title}</h2>
+                <button className="text-xs text-[#526085] flex items-center hover:text-white transition-colors">
                     مشاهده همه
                     <ChevronLeft size={14} />
                 </button>
             </div>
-            <div className="flex overflow-x-auto no-scrollbar pb-4 pr-4 -ml-4 pl-4">
+            <div className="flex overflow-x-auto no-scrollbar pb-2 pr-4 pl-4 -ml-0">
                 {children}
             </div>
         </div>
