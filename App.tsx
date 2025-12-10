@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import MovieDetail from './pages/MovieDetail';
@@ -10,6 +10,7 @@ import Saved from './pages/Saved';
 import { WatchlistProvider } from './context/WatchlistContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
+import { app as firebaseApp } from './services/firebase'; // Import to ensure init
 
 // Mock Pages for unfinished routes
 const Placeholder = ({ title }: { title: string }) => (
@@ -20,6 +21,13 @@ const Placeholder = ({ title }: { title: string }) => (
 );
 
 const App: React.FC = () => {
+  
+  useEffect(() => {
+    // Firebase is initialized via the import.
+    // You can trigger specific analytics events here if needed.
+    console.log("Firebase initialized:", firebaseApp.name);
+  }, []);
+
   return (
     <ThemeProvider>
       <AuthProvider>

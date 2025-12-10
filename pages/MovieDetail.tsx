@@ -6,6 +6,7 @@ import { MOCK_COMMENTS, MOCK_USER } from '../constants';
 import { ArrowRight, Star, Calendar, Clock, PlayCircle, Download, Share2, Heart, Info, ThumbsUp, ThumbsDown, MessageCircle, MoreVertical, Send, User, MessageSquare } from 'lucide-react';
 import { useWatchlist } from '../context/WatchlistContext';
 import VideoPlayer from '../components/VideoPlayer';
+import AdBanner from '../components/AdBanner';
 
 const MovieDetail: React.FC = () => {
   const location = useLocation();
@@ -157,6 +158,9 @@ const MovieDetail: React.FC = () => {
             <div className="rounded-xl overflow-hidden shadow-2xl border border-separator">
                 <VideoPlayer posterUrl={movie.backdropUrl} streamLinks={movie.streamLinks} />
             </div>
+
+            {/* Ad Banner Below Video */}
+            <AdBanner className="my-2" />
 
             {/* Download Links */}
             <div className="space-y-3">

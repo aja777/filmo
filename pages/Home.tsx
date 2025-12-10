@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import HeroSlider from '../components/HeroSlider';
 import MovieCard from '../components/MovieCard';
+import AdBanner from '../components/AdBanner';
 import { api } from '../services/api';
 import { Movie, Category } from '../types';
 import { ChevronLeft, Bell, Search, Clapperboard, Loader2 } from 'lucide-react';
@@ -108,8 +109,13 @@ const Home: React.FC = () => {
              </div>
         </div>
 
+        {/* Ad Banner */}
+        <div className="px-4">
+           <AdBanner />
+        </div>
+
         {/* Featured Landscape Section */}
-        <div className="mt-6 px-4">
+        <div className="mt-2 px-4">
             <div className="flex justify-between items-center mb-4">
                  <h2 className="text-lg font-bold text-content-primary border-r-4 border-primary pr-3">پیشنهاد ویژه کیامووی</h2>
             </div>
@@ -128,6 +134,11 @@ const Home: React.FC = () => {
                 </div>
             ))}
         </Section>
+
+        {/* Ad Banner */}
+        <div className="px-4 mt-4">
+           <AdBanner format="rectangle" className="hidden md:flex" />
+        </div>
 
         {/* Series Section */}
         {series.length > 0 && (
