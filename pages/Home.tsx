@@ -170,7 +170,7 @@ const Home: React.FC = () => {
 const Section = ({ title, link, children }: { title: string, link: string, children?: React.ReactNode }) => {
     if (React.Children.count(children) === 0) return null;
     return (
-        <div className="mt-6 border-t border-separator/50 pt-6">
+        <div className="mt-6 border-t border-white/5 pt-6">
             <div className="flex justify-between items-center px-4 mb-4">
                 <h2 className="text-lg font-bold text-content-primary border-r-4 border-primary pr-3">{title}</h2>
                 <button className="text-xs text-primary flex items-center hover:underline">
