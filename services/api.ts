@@ -18,15 +18,28 @@ export interface ApiResponse<T> {
 
 // Convert WP Movie structure to App Movie structure
 const transformMovie = (wpMovie: any): Movie => {
-    // Default mock stream if none provided by API (since API code didn't show streams)
-    const defaultStream = [
-        { quality: '720p', url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' }
-    ];
+    // Parse download links from API
+    // Expecting structure: [{ quality: '1080p', url: '...', size: '...' }, ...]
+    const downloadLinks = Array.isArray(wpMovie.download_links) 
+        ? wpMovie.download_links.map((l: any) => ({
+            quality: l.quality || 'کیفیت بالا',
+            size: l.size || 'نامشخص',
+            url: l.url
+        })) 
+        : [];
+
+    // Use download links as stream sources if available
+    // Fallback to mock if no links exist (so player doesn't break during dev)
+    const streamLinks = downloadLinks.length > 0 
+        ? downloadLinks.map((l: any) => ({ quality: l.quality || 'HD', url: l.url }))
+        : [
+            { quality: '720p', url: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' }
+        ];
 
     return {
       id: String(wpMovie.id),
       title: wpMovie.title,
-      originalTitle: '', // Not in API list
+      originalTitle: '', // Not provided in current API response
       description: wpMovie.excerpt || '',
       posterUrl: wpMovie.thumbnail || 'https://via.placeholder.com/300x450',
       backdropUrl: wpMovie.thumbnail || 'https://via.placeholder.com/800x400',
@@ -40,8 +53,8 @@ const transformMovie = (wpMovie: any): Movie => {
       hasSubtitle: wpMovie.categories?.includes('زیرنویس فارسی'),
       type: wpMovie.type === 'post' ? 'movie' : wpMovie.type, // Map 'post' to 'movie' if needed
       age_rating: wpMovie.age_rating,
-      downloadLinks: [],
-      streamLinks: defaultStream, // Fallback for demo
+      downloadLinks: downloadLinks,
+      streamLinks: streamLinks,
       isFree: false 
     };
 };

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Movie, Comment } from '../types';
@@ -157,30 +158,46 @@ const MovieDetail: React.FC = () => {
                 <VideoPlayer posterUrl={movie.backdropUrl} streamLinks={movie.streamLinks} />
             </div>
 
-            {/* Download Links / Online Play Button */}
+            {/* Download Links */}
             <div className="space-y-3">
-                <button className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3.5 rounded-lg flex items-center justify-center transition-colors mb-4 shadow-lg shadow-primary/20">
+                <button 
+                    onClick={() => {
+                        const playerElement = document.querySelector('video');
+                        if (playerElement) {
+                            playerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            playerElement.play().catch(e => console.log(e));
+                        }
+                    }}
+                    className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3.5 rounded-lg flex items-center justify-center transition-colors mb-4 shadow-lg shadow-primary/20"
+                >
                     <PlayCircle size={20} className="ml-2 fill-white text-primary" />
                     پخش آنلاین
                 </button>
 
                 <div className="grid grid-cols-1 gap-3">
-                     {/* Mock Styled Download Buttons matching screenshot */}
-                     <div className="flex space-x-3 space-x-reverse">
-                        <div className="flex-1 bg-[#3f4ab9] rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-[#323b96] transition-colors shadow-md">
-                            <div className="flex flex-col">
-                                <span className="text-white text-xs font-bold">دانلود 720p زیرنویس</span>
-                                <span className="text-white/70 text-[10px]">فارسی</span>
-                            </div>
-                            <Download size={20} className="text-white" />
-                        </div>
-                         <div className="flex-1 bg-[#3f4ab9] rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-[#323b96] transition-colors shadow-md">
-                            <div className="flex flex-col">
-                                <span className="text-white text-xs font-bold">دانلود زیرنویس فارسی</span>
-                            </div>
-                            <Download size={20} className="text-white" />
-                        </div>
-                     </div>
+                     {movie.downloadLinks && movie.downloadLinks.length > 0 ? (
+                        movie.downloadLinks.map((link, index) => (
+                             <a 
+                                key={index} 
+                                href={link.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="w-full bg-[#3f4ab9] rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-[#323b96] transition-colors shadow-md group"
+                             >
+                                <div className="flex flex-col items-start">
+                                    <span className="text-white text-xs font-bold">دانلود با کیفیت {link.quality}</span>
+                                    <span className="text-white/70 text-[10px]">حجم: {link.size}</span>
+                                </div>
+                                <div className="bg-white/10 p-1.5 rounded-full group-hover:bg-white/20 transition-colors">
+                                    <Download size={18} className="text-white" />
+                                </div>
+                            </a>
+                        ))
+                     ) : (
+                         <div className="text-center p-4 border border-dashed border-separator rounded-lg text-content-secondary text-sm">
+                             لینک دانلودی برای این فیلم یافت نشد
+                         </div>
+                     )}
                 </div>
             </div>
 

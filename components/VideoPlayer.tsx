@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, Subtitles } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, Subtitles, Loader2, ArrowLeft } from 'lucide-react';
 import { StreamLink } from '../types';
 
 interface VideoPlayerProps {
@@ -9,12 +9,20 @@ interface VideoPlayerProps {
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(1);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [currentQuality, setCurrentQuality] = useState<StreamLink | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Default mock streams if none provided
   const defaultStreams: StreamLink[] = [
@@ -31,7 +39,44 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => 
     }
   }, [streams, currentQuality]);
 
-  const togglePlay = () => {
+  // Handle Fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Auto-hide controls logic
+  useEffect(() => {
+    const show = () => {
+      setShowControls(true);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      if (isPlaying) {
+        controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('mousemove', show);
+      container.addEventListener('touchstart', show);
+      container.addEventListener('click', show);
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('mousemove', show);
+        container.removeEventListener('touchstart', show);
+        container.removeEventListener('click', show);
+      }
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
+  }, [isPlaying]);
+
+  const togglePlay = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
@@ -45,34 +90,44 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
       const current = videoRef.current.currentTime;
-      const duration = videoRef.current.duration;
-      setProgress((current / duration) * 100);
+      const dur = videoRef.current.duration;
+      setCurrentTime(current);
+      setDuration(dur);
+      setProgress((current / dur) * 100);
+      setIsBuffering(false);
     }
   };
+
+  const handleWaiting = () => setIsBuffering(true);
+  const handleCanPlay = () => setIsBuffering(false);
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     if (videoRef.current) {
-      const duration = videoRef.current.duration;
-      videoRef.current.currentTime = (value / 100) * duration;
+      const dur = videoRef.current.duration;
+      videoRef.current.currentTime = (value / 100) * dur;
       setProgress(value);
     }
   };
 
-  const toggleMute = () => {
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
     }
   };
 
-  const toggleFullscreen = () => {
-    if (videoRef.current) {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        videoRef.current.requestFullscreen();
-      }
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!containerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
     }
   };
 
@@ -94,105 +149,135 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ posterUrl, streamLinks }) => 
     }
   };
 
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds)) return "00:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
   return (
-    <div className="relative w-full aspect-video bg-black group overflow-hidden">
+    <div 
+      ref={containerRef}
+      className="relative w-full aspect-video bg-black group overflow-hidden select-none"
+    >
       <video
         ref={videoRef}
         src={currentQuality?.url}
         poster={posterUrl}
         className="w-full h-full object-contain"
         onTimeUpdate={handleTimeUpdate}
-        onEnded={() => setIsPlaying(false)}
+        onWaiting={handleWaiting}
+        onCanPlay={handleCanPlay}
+        onEnded={() => { setIsPlaying(false); setShowControls(true); }}
         onClick={togglePlay}
+        playsInline
       />
 
+      {/* Buffering Indicator */}
+      {isBuffering && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <Loader2 size={48} className="text-primary animate-spin drop-shadow-lg" />
+        </div>
+      )}
+
+      {/* Play/Pause Center Overlay (Only when paused and controls visible) */}
+      {!isPlaying && !isBuffering && showControls && (
+        <div 
+            className="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/30 z-10"
+            onClick={togglePlay}
+        >
+            <div className="bg-primary/90 hover:bg-primary backdrop-blur-md p-5 rounded-full shadow-2xl transition-transform transform hover:scale-110 active:scale-95">
+                <Play size={32} className="text-white fill-white ml-1" />
+            </div>
+        </div>
+      )}
+
       {/* Controls Overlay */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+      <div 
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent px-4 pb-4 pt-12 transition-all duration-300 z-20 ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Progress Bar */}
-        <div className="mb-4">
+        <div className="mb-3 group/slider relative">
             <input
               type="range"
               min="0"
               max="100"
               value={progress}
               onChange={handleSeek}
-              className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-primary"
+              className="w-full h-1 bg-white/20 rounded-full appearance-none cursor-pointer outline-none relative z-20"
+              style={{
+                background: `linear-gradient(to right, #10B981 ${progress}%, rgba(255,255,255,0.2) ${progress}%)`
+              }}
             />
+            {/* Thumb hover effect handled by browser/OS, customized input above */}
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4 space-x-reverse">
-            <button onClick={togglePlay} className="text-white hover:text-primary transition-colors">
-              {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+            <button onClick={togglePlay} className="text-white hover:text-primary transition-colors focus:outline-none">
+              {isPlaying ? <Pause size={24} className="fill-current" /> : <Play size={24} className="fill-current" />}
             </button>
             
-            <button onClick={toggleMute} className="text-white hover:text-gray-300 transition-colors">
+            <button onClick={toggleMute} className="text-white hover:text-gray-300 transition-colors focus:outline-none">
               {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
             </button>
             
-            <span className="text-white text-xs font-mono">
-                {videoRef.current ? formatTime(videoRef.current.currentTime) : '00:00'} / 
-                {videoRef.current ? formatTime(videoRef.current.duration || 0) : '00:00'}
+            <span className="text-white text-xs font-mono font-medium tracking-wider">
+                {formatTime(currentTime)} <span className="text-white/50">/</span> {formatTime(duration)}
             </span>
           </div>
 
           <div className="flex items-center space-x-4 space-x-reverse relative">
-             {/* Subtitle Toggle (Mock) */}
-            <button className="text-white hover:text-gray-300 transition-colors" title="زیرنویس">
-                <Subtitles size={20} />
-            </button>
-
-            {/* Quality Settings */}
+            {/* Settings */}
             <div className="relative">
                 <button 
                     onClick={() => setShowSettings(!showSettings)} 
-                    className="text-white hover:text-gray-300 transition-colors flex items-center space-x-1 space-x-reverse"
+                    className="text-white hover:text-primary transition-colors flex items-center space-x-1 space-x-reverse focus:outline-none"
                 >
-                    <Settings size={20} />
-                    <span className="text-[10px] font-bold">{currentQuality?.quality}</span>
+                    <Settings size={20} className={showSettings ? "animate-spin-slow text-primary" : ""} />
+                    <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded hidden sm:inline-block">{currentQuality?.quality}</span>
                 </button>
                 
                 {showSettings && (
-                    <div className="absolute bottom-8 left-0 bg-dark-surface border border-separator rounded-lg p-2 shadow-xl w-32 animate-fadeIn z-50">
-                        <p className="text-[10px] text-content-secondary mb-2 px-2">کیفیت پخش</p>
-                        {streams.map((s, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => changeQuality(s)}
-                                className={`w-full text-right text-xs px-2 py-1.5 rounded hover:bg-white/10 ${currentQuality?.quality === s.quality ? 'text-primary font-bold' : 'text-white'}`}
-                            >
-                                {s.quality}
-                            </button>
-                        ))}
+                    <div className="absolute bottom-10 left-0 bg-dark-surface/95 backdrop-blur-xl border border-separator rounded-xl p-2 shadow-2xl w-36 animate-slideUp origin-bottom-left z-50">
+                        <div className="flex items-center justify-between px-2 mb-2 pb-2 border-b border-separator">
+                            <span className="text-[10px] font-bold text-content-secondary">کیفیت پخش</span>
+                            <Settings size={12} className="text-content-secondary" />
+                        </div>
+                        <div className="space-y-1">
+                            {streams.map((s, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => changeQuality(s)}
+                                    className={`w-full text-right text-xs px-3 py-2 rounded-lg transition-all ${currentQuality?.quality === s.quality ? 'bg-primary text-white font-bold shadow-lg shadow-primary/20' : 'text-content-primary hover:bg-white/5'}`}
+                                >
+                                    {s.quality}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
+            
+             {/* Subtitle Toggle (Mock) */}
+            <button className="text-white hover:text-white/80 transition-colors focus:outline-none hidden sm:block">
+                <Subtitles size={20} />
+            </button>
 
-            <button onClick={toggleFullscreen} className="text-white hover:text-gray-300 transition-colors">
-              <Maximize size={20} />
+            {/* Fullscreen */}
+            <button onClick={toggleFullscreen} className="text-white hover:text-primary transition-colors focus:outline-none">
+              {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
             </button>
           </div>
         </div>
       </div>
       
-      {/* Centered Play Button (Initial State) */}
-      {!isPlaying && (
-        <div 
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        >
-            <div className="bg-black/50 backdrop-blur-sm p-4 rounded-full border border-white/20 shadow-2xl">
-                <Play size={40} className="text-white fill-white ml-1" />
-            </div>
-        </div>
-      )}
+      {/* Top Gradient for better visibility of header content if needed */}
+      <div className={`absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/60 to-transparent pointer-events-none transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`} />
     </div>
   );
-};
-
-const formatTime = (seconds: number) => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
 };
 
 export default VideoPlayer;
