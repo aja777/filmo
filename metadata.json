@@ -1,0 +1,7 @@
+{
+  "name": "KiaMovie PWA",
+  "description": "A high-performance, native-feel movie streaming web application inspired by KiaMovie, featuring AI-powered recommendations and a dark cinematic UI.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

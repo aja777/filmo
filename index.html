@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>KiaMovie App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: '#10B981', // Emerald 500 (Green)
+                hover: '#059669',   // Emerald 600
+              },
+              // Semantic colors mapping to CSS variables
+              dark: {
+                bg: 'var(--bg-color)',
+                surface: 'var(--surface-color)',
+                card: 'var(--card-color)',
+              },
+              content: {
+                primary: 'var(--text-primary)',
+                secondary: 'var(--text-secondary)',
+              },
+              separator: 'var(--border-color)',
+            },
+            fontFamily: {
+              sans: ['Vazirmatn', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        /* Light Theme Defaults */
+        --bg-color: #F3F4F6;
+        --surface-color: #FFFFFF;
+        --card-color: #E5E7EB;
+        --text-primary: #111827;
+        --text-secondary: #4B5563;
+        --border-color: #E5E7EB;
+      }
+      
+      .dark {
+        /* Dark Theme Defaults (KiaMovie style) */
+        --bg-color: #0F1014;
+        --surface-color: #181A20;
+        --card-color: #22252B;
+        --text-primary: #F9FAFB;
+        --text-secondary: #94A3B8; /* Slate-400 for blue-ish gray text */
+        /* Dark Blueish Separator */
+        --border-color: #2A3241; 
+      }
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-primary);
+        font-family: 'Vazirmatn', sans-serif;
+        -webkit-tap-highlight-color: transparent;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      
+      /* Hide scrollbar for clean UI */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.32.0",
+    "react/": "https://esm.sh/react@^19.2.1/",
+    "react": "https://esm.sh/react@^19.2.1",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.10.1",
+    "lucide-react": "https://esm.sh/lucide-react@^0.559.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.1/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
